@@ -1,105 +1,135 @@
-// Import Firebase modules
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+document.addEventListener("DOMContentLoaded", () => {
+    const dialogBox = document.getElementById("dialog-box");
 
-// Firebase Configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyAisj4Mi4HroBOjSLxqWShecHQqvf1Eq_4",
-    authDomain: "opportune-bd6d3.firebaseapp.com",
-    projectId: "opportune-bd6d3",
-    storageBucket: "opportune-bd6d3.firebasestorage.app",
-    messagingSenderId: "164495994504",
-    appId: "1:164495994504:web:4513d2dc91cc494c73793d",
-    measurementId: "G-STRW9PYFPR"
-};
+    async function handleQuery(data) {
+        try {
+            const response = await fetch("http://localhost:5000/process-query", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(data),
+            });
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const auth = getAuth();
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
-
-// Function to handle Google Sign-In
-async function handleSignIn() {
-    try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        return user; // Return the signed-in user
-    } catch (error) {
-        console.error("Sign-In Error:", error.message);
-        alert("Failed to sign in. Please try again.");
-    }
-}
-
-// Function to Save User Data in Firestore
-async function saveUserData(user, careerInterest, skills = null, hobbies = null) {
-    try {
-        const userDoc = doc(db, "users", user.uid);
-        const data = {
-            name: user.displayName,
-            email: user.email,
-            careerInterest: careerInterest,
-        };
-        if (skills && hobbies) {
-            data.skills = skills;
-            data.hobbies = hobbies;
+            if (response.ok) {
+                const internships = await response.json();
+                displayResults(internships);
+            } else {
+                const errorText = await response.text();
+                console.error("Error:", errorText);
+                alert("Failed to process query. Please check the console for details.");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("An error occurred while processing your query. Please try again.");
         }
-        await setDoc(userDoc, data);
-        alert("Your data has been saved successfully!");
-    } catch (error) {
-        console.error("Error saving user data:", error.message);
-        alert("Failed to save data. Please try again.");
     }
-}
 
-// DOM Elements
-const dontKnowButton = document.getElementById('dont-know');
-const submitInterestButton = document.getElementById('submit-interest');
-const signInButton = document.getElementById('sign-in');
-const dialogBox = document.getElementById('dialog-box');
-
-// Event Listener: Handle "I Don't Know" Button Click
-dontKnowButton.addEventListener('click', async () => {
-    const user = auth.currentUser || await handleSignIn(); // Ensure user is signed in
-    if (!user) return;
-
-    // Update the dialog box for additional fields
-    dialogBox.innerHTML = `
-        <h2>Tell us more about yourself!</h2>
-        <input type="text" id="skills-input" placeholder="Enter your current skills" />
-        <input type="text" id="hobbies-input" placeholder="Enter your interests or hobbies" />
-        <button id="submit-details">Submit</button>
-    `;
-
-    const submitDetailsButton = document.getElementById('submit-details');
-    submitDetailsButton.addEventListener('click', async () => {
-        const skills = document.getElementById('skills-input').value;
-        const hobbies = document.getElementById('hobbies-input').value;
-        if (skills && hobbies) {
-            await saveUserData(user, "I Don't Know", skills, hobbies);
-        } else {
-            alert('Please fill out both fields before submitting!');
+    function displayResults(internships) {
+        if (!internships || internships.length === 0) {
+            dialogBox.innerHTML = `
+                <h2>No Results Found</h2>
+                <button id="go-back">Go Back</button>
+            `;
+            attachGoBackListener();
+            return;
         }
-    });
-});
 
-// Event Listener: Handle "Submit Interest" Button Click
-submitInterestButton.addEventListener('click', async () => {
-    const user = auth.currentUser || await handleSignIn(); // Ensure user is signed in
-    if (!user) return;
+        try {
+            let formattedResults = internships
+                .map(
+                    (internship) => `
+                    <div class="result-card">
+                        <h3 class="result-title">${internship.title}</h3>
+                        <div class="result-content">
+                            <p><strong>URL:</strong></p>
+                            <a class="result-link" href="${internship.url}" target="_blank">${internship.url}</a>
+                        </div>
+                        <div class="result-section">
+                            <p><strong>Skills:</strong></p>
+                            <ul class="result-list">
+                                ${internship.skills.map((skill) => `<li>${skill}</li>`).join("")}
+                            </ul>
+                        </div>
+                        <div class="result-section">
+                            <p><strong>Free Resources:</strong></p>
+                            <ul class="result-list">
+                                ${internship.free_resources
+                                    .map(
+                                        (resource) => `
+                                        <li>
+                                            <a class="resource-link" href="${resource}" target="_blank">${resource}</a>
+                                        </li>
+                                    `
+                                    )
+                                    .join("")}
+                            </ul>
+                        </div>
+                    </div>
+                `
+                )
+                .join("");
 
-    const careerInterest = document.getElementById('career-input').value;
-    if (careerInterest) {
-        await saveUserData(user, careerInterest);
-    } else {
-        alert('Please enter a career interest before submitting!');
+            dialogBox.innerHTML = `
+                <h2>Results</h2>
+                <div class="result-container">
+                    ${formattedResults}
+                </div>
+                <button id="go-back">Go Back</button>
+            `;
+            attachGoBackListener();
+        } catch (error) {
+            console.error("Error displaying results:", error);
+            dialogBox.innerHTML = `
+                <h2>Error Displaying Results</h2>
+                <p>Please check the console for more details.</p>
+                <button id="go-back">Go Back</button>
+            `;
+            attachGoBackListener();
+        }
     }
-});
 
-// Event Listener: Handle "Sign In" Button Click
-signInButton.addEventListener('click', async () => {
-    await handleSignIn();
+    function attachGoBackListener() {
+        const goBackButton = document.getElementById("go-back");
+        goBackButton?.addEventListener("click", () => {
+            window.location.reload();
+        });
+    }
+
+    function attachListeners() {
+        const dontKnowButton = document.getElementById("dont-know");
+        const submitInterestButton = document.getElementById("submit-interest");
+
+        dontKnowButton?.addEventListener("click", () => {
+            dialogBox.innerHTML = `
+                <h2>Tell us more about yourself!</h2>
+                <input type="text" id="skills-input" placeholder="Enter your current skills" />
+                <input type="text" id="hobbies-input" placeholder="Enter your interests or hobbies" />
+                <button id="submit-details">Submit</button>
+            `;
+
+            const submitDetailsButton = document.getElementById("submit-details");
+            submitDetailsButton?.addEventListener("click", () => {
+                const skills = document.getElementById("skills-input").value.trim();
+                const hobbies = document.getElementById("hobbies-input").value.trim();
+
+                if (skills && hobbies) {
+                    handleQuery({ type: "skills_and_hobbies", skills, hobbies });
+                } else {
+                    alert("Please fill out both fields before submitting!");
+                }
+            });
+        });
+
+        submitInterestButton?.addEventListener("click", () => {
+            const careerInterest = document.getElementById("career-input").value.trim();
+            if (careerInterest) {
+                handleQuery({ type: "career_interest", careerInterest });
+            } else {
+                alert("Please enter a career interest before submitting!");
+            }
+        });
+    }
+
+    attachListeners();
 });

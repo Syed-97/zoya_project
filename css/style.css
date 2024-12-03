@@ -63,7 +63,7 @@ body {
     border-radius: 16px; /* Softer corners for a modern feel */
     text-align: center;
     width: 90%;
-    max-width: 400px;
+    max-width: max-content;
     backdrop-filter: blur(8px); /* Adds a smooth glassy effect */
     animation: fadeIn 1s ease-in-out; /* Subtle entrance animation */
 }
@@ -112,6 +112,68 @@ body {
 .dialog-box button:active {
     transform: translateY(0); /* Return to normal on click */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Result Card Container */
+.result-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin: 2rem auto; /* Center container horizontally */
+    width: 90%; /* Take up 90% of the available width */
+    max-width: 1000px; /* Set a reasonable maximum width for readability */
+    overflow-y: auto;
+    max-height: 70vh; /* Increased height for better visibility of content */
+    text-align: left;
+}
+
+/* Individual Result Card */
+.result-card {
+    background: rgba(255, 255, 255, 0.9); /* Matches frosted glass effect */
+    border-radius: 12px;
+    padding: 2rem; /* Increased padding for better spacing */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    width: 100%; /* Ensure cards take full width of the container */
+}
+
+.result-card:hover {
+    transform: translateY(-5px); /* Lift effect on hover */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Title Styling */
+.result-title {
+    font-size: 1.6rem; /* Slightly larger title font */
+    color: #1a73e8;
+    margin-bottom: 0.8rem;
+    font-weight: 700;
+}
+
+/* Section Styling */
+.result-section {
+    margin-top: 1.5rem; /* Increased spacing between sections */
+}
+
+/* List Styling */
+.result-list {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin: 0.5rem 0;
+    color: black;
+}
+
+/* Links Styling */
+.result-link, .resource-link {
+    color: #1a73e8;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+    word-wrap: break-word; /* Break long URLs to prevent overflow */
+}
+
+.result-link:hover, .resource-link:hover {
+    color: #61c5ff;
 }
 
 /* Footer */
